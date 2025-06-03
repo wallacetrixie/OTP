@@ -1,181 +1,178 @@
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
-import './styles/Login.css';
-import { FontAwesomeIcon } from '@fortawesome/react-fontawesome';
-import { faEnvelope, faLock, faUser } from '@fortawesome/free-solid-svg-icons';
-import axios from 'axios';
+import React, { useState, useEffect } from "react";
+import { useNavigate } from "react-router-dom";
+import "./styles/Login.css";
+import { FontAwesomeIcon } from "@fortawesome/react-fontawesome";
+import { faEnvelope, faLock, faUser } from "@fortawesome/free-solid-svg-icons";
+import axios from "axios";
 
 const Login = () => {
   const [isSignUp, setIsSignUp] = useState(false);
 
-  // Login state
-  const [loginEmail, setLoginEmail] = useState('');
-  const [loginPassword, setLoginPassword] = useState('');
-  const [loginMessage, setLoginMessage] = useState('');
+  // Login
+  const [loginEmail, setLoginEmail] = useState("");
+  const [loginPassword, setLoginPassword] = useState("");
+  const [loginMessage, setLoginMessage] = useState("");
   const [loginError, setLoginError] = useState(false);
 
-  // Forgot password state
-  const [showReset, setShowReset] = useState(false);
-  const [resetPassword, setResetPassword] = useState('');
-  const [resetConfirmPassword, setResetConfirmPassword] = useState('');
-  const [resetError, setResetError] = useState('');
-  const [resetSuccess, setResetSuccess] = useState('');
-
-  // Signup state
-  const [signupUsername, setSignupUsername] = useState('');
-  const [signupEmail, setSignupEmail] = useState('');
-  const [signupPassword, setSignupPassword] = useState('');
-  const [signupConfirmPassword, setSignupConfirmPassword] = useState('');
-  const [signupMessage, setSignupMessage] = useState('');
+  // Signup
+  const [signupUsername, setSignupUsername] = useState("");
+  const [signupEmail, setSignupEmail] = useState("");
+  const [signupPassword, setSignupPassword] = useState("");
+  const [signupConfirmPassword, setSignupConfirmPassword] = useState("");
+  const [signupMessage, setSignupMessage] = useState("");
   const [signupError, setSignupError] = useState(false);
+
+  // Forgot Password with OTP
+  const [showOTPForm, setShowOTPForm] = useState(false);
+  const [otpEmail, setOtpEmail] = useState("");
+  const [otpInputs, setOtpInputs] = useState(["", "", "", "", "", ""]);
+  const [otpMessage, setOtpMessage] = useState("");
+  const [otpError, setOtpError] = useState(false);
 
   const toggleMode = () => {
     setIsSignUp(!isSignUp);
-    // Reset all form and message states
-    setLoginEmail('');
-    setLoginPassword('');
-    setSignupUsername('');
-    setSignupEmail('');
-    setSignupPassword('');
-    setSignupConfirmPassword('');
-    setLoginMessage('');
+    setLoginEmail("");
+    setLoginPassword("");
+    setSignupUsername("");
+    setSignupEmail("");
+    setSignupPassword("");
+    setSignupConfirmPassword("");
+    setLoginMessage("");
     setLoginError(false);
-    setSignupMessage('');
+    setSignupMessage("");
     setSignupError(false);
-    setShowReset(false);
-    setResetPassword('');
-    setResetConfirmPassword('');
-    setResetError('');
-    setResetSuccess('');
+    setShowOTPForm(false);
+    setOtpEmail("");
+    setOtpInputs(["", "", "", "", "", ""]);
+    setOtpMessage("");
+    setOtpError(false);
   };
 
   const handleLogin = async (e) => {
     e.preventDefault();
-    setLoginMessage('');
+    setLoginMessage("");
     setLoginError(false);
     try {
-      const res = await axios.post('http://localhost:5000/login', {
-        email: loginEmail,
-        password: loginPassword,
-      }, { withCredentials: true });
+      const res = await axios.post(
+        "http://localhost:5000/login",
+        {
+          email: loginEmail,
+          password: loginPassword,
+        },
+        { withCredentials: true }
+      );
 
       if (res.data.success) {
         setLoginMessage(res.data.message);
         setLoginError(false);
-        // You might want to redirect or do something after login here
       } else {
         setLoginError(true);
-        setLoginMessage(res.data.message || 'Login failed');
+        setLoginMessage(res.data.message || "Login failed");
       }
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setLoginError(true);
-        setLoginMessage(err.response.data.message);
-      } else {
-        setLoginError(true);
-        setLoginMessage('Server error during login.');
-      }
+      setLoginError(true);
+      setLoginMessage("Server error during login.");
       console.error(err);
     }
   };
 
-  // Forgot password handler (frontend only)
-  const handleResetSubmit = (e) => {
+  const handleOTPInputChange = (index, value) => {
+    if (!/^\d?$/.test(value)) return;
+    const newOtpInputs = [...otpInputs];
+    newOtpInputs[index] = value;
+    setOtpInputs(newOtpInputs);
+
+    // Move to next field
+    if (value && index < 5) {
+      const next = document.getElementById(`otp-${index + 1}`);
+      if (next) next.focus();
+    }
+  };
+
+  const handleSendOTP = (e) => {
     e.preventDefault();
-    setResetError('');
-    setResetSuccess('');
-    if (!resetPassword || !resetConfirmPassword) {
-      setResetError('Both fields are required');
+    if (!otpEmail || !otpEmail.includes("@")) {
+      setOtpError(true);
+      setOtpMessage("Enter a valid email address.");
       return;
     }
-    if (resetPassword !== resetConfirmPassword) {
-      setResetError('Passwords do not match');
-      return;
-    }
-    if (resetPassword.length < 8) {
-      setResetError('Password must be at least 8 characters');
-      return;
-    }
-    // TODO: Call backend API to reset password
-    setResetSuccess('Password reset request sent!');
-    setResetPassword('');
-    setResetConfirmPassword('');
-    setTimeout(() => setShowReset(false), 2000);
+    setOtpError(false);
+    setOtpMessage("OTP sent successfully to your email.");
+    // TODO: Implement actual backend request
   };
 
   const validateSignup = () => {
     const errors = [];
     if (!signupUsername.trim() || signupUsername.length < 3) {
-      errors.push('Username must be at least 3 characters long');
+      errors.push("Username must be at least 3 characters long");
     }
     const emailPattern = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
     if (!emailPattern.test(signupEmail)) {
-      errors.push('Invalid email format');
+      errors.push("Invalid email format");
     }
     const passwordPattern = /^(?=.*[A-Z])(?=.*\d).{8,}$/;
     if (!passwordPattern.test(signupPassword)) {
-      errors.push('Password must be at least 8 characters long, contain an uppercase letter and a number');
+      errors.push(
+        "Password must be at least 8 characters long, contain an uppercase letter and a number"
+      );
     }
     if (signupPassword !== signupConfirmPassword) {
-      errors.push('Passwords do not match');
+      errors.push("Passwords do not match");
     }
     return errors;
   };
 
   const handleSignup = async (e) => {
     e.preventDefault();
-    setSignupMessage('');
+    setSignupMessage("");
     setSignupError(false);
 
     const errors = validateSignup();
     if (errors.length > 0) {
-      setSignupMessage(errors.join('. '));
+      setSignupMessage(errors.join(". "));
       setSignupError(true);
       return;
     }
 
     try {
-      const res = await axios.post('http://localhost:5000/register', {
-        username: signupUsername,
-        email: signupEmail,
-        password: signupPassword,
-      }, { withCredentials: true });
+      const res = await axios.post(
+        "http://localhost:5000/register",
+        {
+          username: signupUsername,
+          email: signupEmail,
+          password: signupPassword,
+        },
+        { withCredentials: true }
+      );
 
       if (res.data.success) {
         setSignupMessage(res.data.message);
         setSignupError(false);
       } else {
-        setSignupMessage(res.data.message || 'Signup failed');
+        setSignupMessage(res.data.message || "Signup failed");
         setSignupError(true);
       }
     } catch (err) {
-      if (err.response && err.response.data && err.response.data.message) {
-        setSignupMessage(err.response.data.message);
-        setSignupError(true);
-      } else {
-        setSignupMessage('Server error during signup.');
-        setSignupError(true);
-      }
+      setSignupMessage("Server error during signup.");
+      setSignupError(true);
       console.error(err);
     }
   };
 
-  // Clear messages after 4 seconds
   useEffect(() => {
-    const clearTimer = (msgSetter, errSetter) => {
+    if (loginMessage) {
       const timer = setTimeout(() => {
-        msgSetter('');
-        errSetter(false);
+        setLoginMessage("");
+        setLoginError(false);
       }, 4000);
       return () => clearTimeout(timer);
-    };
-    if (loginMessage) return clearTimer(setLoginMessage, setLoginError);
+    }
   }, [loginMessage]);
 
   useEffect(() => {
     if (signupMessage) {
       const timer = setTimeout(() => {
-        setSignupMessage('');
+        setSignupMessage("");
         setSignupError(false);
       }, 4000);
       return () => clearTimeout(timer);
@@ -183,18 +180,23 @@ const Login = () => {
   }, [signupMessage]);
 
   useEffect(() => {
-    if (resetSuccess) {
+    if (otpMessage) {
       const timer = setTimeout(() => {
-        setResetSuccess('');
-      }, 2000);
+        setOtpMessage("");
+        setOtpError(false);
+      }, 4000);
       return () => clearTimeout(timer);
     }
-  }, [resetSuccess]);
+  }, [otpMessage]);
 
   return (
-    <div className={`cont ${isSignUp ? 's--signup' : ''}`}>
+    <div className={`cont ${isSignUp ? "s--signup" : ""}`}>
       {/* Login Form */}
-      <form className="form sign-in" style={{ display: isSignUp ? 'none' : 'block' }} onSubmit={handleLogin}>
+      <form
+        className="form sign-in"
+        style={{ display: isSignUp ? "none" : "block" }}
+        onSubmit={handleLogin}
+      >
         <h2>Welcome</h2>
         <label className="input-group">
           <FontAwesomeIcon icon={faEnvelope} className="input-icon" />
@@ -217,32 +219,50 @@ const Login = () => {
           />
         </label>
         {loginMessage && (
-          <p className={loginError ? 'error-msg' : 'success-msg'}>{loginMessage}</p>
+          <p className={loginError ? "error-msg" : "success-msg"}>
+            {loginMessage}
+          </p>
         )}
-        <button type="submit" className="submit">Sign In</button>
-        <div className="forgot-pass" onClick={() => setShowReset(!showReset)}>
+        <button type="submit" className="submit">
+          Sign In
+        </button>
+        <div
+          className="forgot-pass"
+          onClick={() => setShowOTPForm(!showOTPForm)}
+        >
           Forgot Password?
         </div>
-        {showReset && (
-          <form className="reset-dropdown" onSubmit={handleResetSubmit}>
+
+        {showOTPForm && (
+          <div className="otp-reset-form">
+            <h4>Reset Password</h4>
             <input
-              type="password"
-              placeholder="New Password"
-              value={resetPassword}
-              onChange={e => setResetPassword(e.target.value)}
-              required
+              type="email"
+              placeholder="Enter your email"
+              value={otpEmail}
+              onChange={(e) => setOtpEmail(e.target.value)}
             />
-            <input
-              type="password"
-              placeholder="Confirm New Password"
-              value={resetConfirmPassword}
-              onChange={e => setResetConfirmPassword(e.target.value)}
-              required
-            />
-            {resetError && <div className="error-msg">{resetError}</div>}
-            {resetSuccess && <div className="success-msg">{resetSuccess}</div>}
-            <button type="submit" className="submit">Reset Password</button>
-          </form>
+            <button onClick={handleSendOTP} className="submit">
+              Send OTP
+            </button>
+            <div className="otp-inputs">
+              {otpInputs.map((val, i) => (
+                <input
+                  key={i}
+                  id={`otp-${i}`}
+                  type="text"
+                  maxLength={1}
+                  value={val}
+                  onChange={(e) => handleOTPInputChange(i, e.target.value)}
+                />
+              ))}
+            </div>
+            {otpMessage && (
+              <p className={otpError ? "error-msg" : "success-msg"}>
+                {otpMessage}
+              </p>
+            )}
+          </div>
         )}
       </form>
 
@@ -262,7 +282,11 @@ const Login = () => {
         </div>
 
         {/* Signup Form */}
-        <form className="form sign-up" style={{ display: isSignUp ? 'block' : 'none' }} onSubmit={handleSignup}>
+        <form
+          className="form sign-up"
+          style={{ display: isSignUp ? "block" : "none" }}
+          onSubmit={handleSignup}
+        >
           <h2>Create your Account</h2>
           <label className="input-group">
             <FontAwesomeIcon icon={faUser} className="input-icon" />
@@ -305,9 +329,13 @@ const Login = () => {
             />
           </label>
           {signupMessage && (
-            <p className={signupError ? 'error-msg' : 'success-msg'}>{signupMessage}</p>
+            <p className={signupError ? "error-msg" : "success-msg"}>
+              {signupMessage}
+            </p>
           )}
-          <button type="submit" className="submit">Sign Up</button>
+          <button type="submit" className="submit">
+            Sign Up
+          </button>
         </form>
       </div>
     </div>
